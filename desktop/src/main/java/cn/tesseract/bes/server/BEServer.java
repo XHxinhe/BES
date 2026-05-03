@@ -1,38 +1,37 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by Fernflower decompiler)
-//
-
 package cn.tesseract.bes.server;
 
 import cn.tesseract.bes.Main;
-import net.minecraft.*;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.bes.*;
+import net.minecraft.bes.server.MinecraftServer;
 
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class BEServer extends MinecraftServer {
-    public final agD theWorldSettings;
-    public final Ov F;
-    public final BESListenThread theServerListeningThread;
-    public ThreadLanServerPing lanServerPing;
-    public final Ov M;
+    private final List<ServerCommand> pendingCommandList;
+    public agD theWorldSettings;
+    public Ov obf1_F;
+    public BESListenThread theServerListeningThread;
+    public Ov obf1_M;
 
     public BEServer(long seed, String ip, int port) {
-        super(new File(System.getProperty("user.dir")));
-        this.F = new Ow("Minecraft-Server", " [SERVER]", (new File(Main.mcDataDir, "log/output-server.log")).getAbsolutePath());
-        this.M = new Ow("Suspicious-Log", null, (new File(Main.mcDataDir, "log/suspicious.log")).getAbsolutePath());
-        Minecraft.c = F;
-        Minecraft.d = F;
-        this.setServerOwner("Tesseract");
-        this.setFolderName("world");
-        this.setWorldName("world");
-        this.setDemo(false);
-        this.canCreateBonusChest(false);
-        this.setBuildLimit(256);
-        this.setConfigurationManager(new BESPlayerList(this));
+        super(Main.mcDataDir);
+        this.pendingCommandList = Collections.synchronizedList(new ArrayList<>());
+        this.obf1_F = new Ow("Minecraft-Server", " [SERVER]", new File(Main.mcDataDir, "log/output-server.log").getAbsolutePath());
+        this.obf1_M = new Ow("Suspicious-Log", null, new File(Main.mcDataDir, "log/suspicious.log").getAbsolutePath());
+        Minecraft.obf1_c = this.obf1_F;
+        Minecraft.obf1_d = this.obf1_F;
+        setServerOwner("Tesseract");
+        setFolderName("world");
+        setWorldName("world");
+        setDemo(false);
+        canCreateBonusChest(false);
+        setBuildLimit(256);
+        setConfigurationManager(new BESPlayerList(this));
         this.theWorldSettings = new agD(seed, EnumGameType.SURVIVAL, true, false, WorldType.parseWorldType("largeBiomes"), false);
         try {
             this.theServerListeningThread = new BESListenThread(this, InetAddress.getByName(ip), port);
@@ -41,48 +40,49 @@ public class BEServer extends MinecraftServer {
         }
     }
 
-    public final void loadAllWorlds(String var1, String var2, long var3, WorldType var5, String var6) {
-        this.convertMapIfNeeded(var1);
+    public void loadAllWorlds(String var1, String var2, long var3, WorldType var5, String var6) {
+        convertMapIfNeeded(var1);
         this.worldServers = new WorldServer[4];
         this.timeOfLastDimensionTick = new long[this.worldServers.length][100];
-        ISaveHandler var7 = this.getActiveAnvilConverter().getSaveLoader(var1, true);
-
-        for (int var8 = 0; var8 < this.worldServers.length; ++var8) {
-            byte var4 = (byte) f(var8);
+        ISaveHandler var7 = getActiveAnvilConverter().getSaveLoader(var1, true);
+        for (int var8 = 0; var8 < this.worldServers.length; var8++) {
+            byte var4 = (byte) obf1_f(var8);
             if (var8 == 0) {
-                if (this.isDemo()) {
-                    this.worldServers[var8] = new ahA(this, var7, var2, var4, this.theProfiler, this.F);
+                if (isDemo()) {
+                    this.worldServers[var8] = new ahA(this, var7, var2, var4, this.theProfiler, this.obf1_F);
                 } else {
-                    this.worldServers[var8] = new WorldServer(this, var7, var2, var4, this.theWorldSettings, this.theProfiler, this.F);
+                    this.worldServers[var8] = new WorldServer(this, var7, var2, var4, this.theWorldSettings, this.theProfiler, this.obf1_F);
                 }
             } else {
-                this.worldServers[var8] = new agC(this, var7, var2, var4, this.theWorldSettings, this.worldServers[0], this.theProfiler, this.F);
+                this.worldServers[var8] = new agC(this, var7, var2, var4, this.theWorldSettings, this.worldServers[0], this.theProfiler, this.obf1_F);
             }
-
             this.worldServers[var8].addWorldAccess(new ags(this, this.worldServers[var8]));
-            xi.a(this.worldServers[var8]);
-            this.getConfigurationManager().setPlayerManager(this.worldServers);
+            xi.obf1_a(this.worldServers[var8]);
+            getConfigurationManager().setPlayerManager(this.worldServers);
         }
-
-        this.initialWorldChunkLoad();
+        initialWorldChunkLoad();
     }
 
-    public final boolean startServer() {
-        this.F.a("Starting not a integrated minecraft server version 1.6.4", new Object[0]);
-        this.d(false);
-        this.e(true);
-        this.f(true);
-        this.g(true);
-        this.setAllowFlight(true);
-        this.F.a("Generating keypair", new Object[0]);
-        this.setKeyPair(CryptManager.createNewKeyPair());
-        this.loadAllWorlds(this.getFolderName(), this.getWorldName(), this.theWorldSettings.a, this.theWorldSettings.f, this.theWorldSettings.h);
-
-        Sc.a();
+    public boolean startServer() {
+        BEServerCommandThread var1 = new BEServerCommandThread(this);
+        var1.setDaemon(true);
+        var1.start();
+        this.obf1_F.obf1_a("Starting Break Everything Server", new Object[0]);
+        obf1_d(false);
+        obf1_e(true);
+        obf1_f(true);
+        obf1_g(true);
+        setAllowFlight(true);
+        this.obf1_F.obf1_a("Generating keypair", new Object[0]);
+        setKeyPair(CryptManager.createNewKeyPair());
+        loadAllWorlds(getFolderName(), getWorldName(), this.theWorldSettings.obf1_a, this.theWorldSettings.obf1_f, this.theWorldSettings.obf1_h);
+        Sc.obf1_a();
+        Main.started = true;
+        getLogAgent().obf1_a("Done!", new Object[0]);
         return true;
     }
 
-    public final void tick() {
+    public void tick() {
         super.tick();
         if (this.tickCounter % 1000 == 0) {
             getConfigurationManager().loadWhiteList();
@@ -92,41 +92,42 @@ public class BEServer extends MinecraftServer {
         }
     }
 
-    public final void ab() {
-        if (!D) {
-            this.F.a("Saving all players and worlds...", new Object[0]);
-            this.getConfigurationManager().saveAllPlayerData();
-            this.a(false);
-            Xe.a(this);
+    public void obf1_ab() {
+        if (!obf1_D) {
+            this.obf1_F.obf1_a("Saving all players and worlds...", new Object[0]);
+            getConfigurationManager().saveAllPlayerData();
+            obf1_a(false);
+            Xe.obf1_a(this);
         }
     }
 
-    public final boolean canStructuresSpawn() {
+    public boolean canStructuresSpawn() {
         return true;
     }
 
-    public final EnumGameType getGameType() {
-        return this.theWorldSettings.b;
+    public EnumGameType getGameType() {
+        return this.theWorldSettings.obf1_b;
     }
 
-    public final afZ f() {
-        return afZ.a;
+    public afZ obf1_f() {
+        return afZ.obf1_b;
     }
 
-    public final boolean isHardcore() {
-        return this.theWorldSettings.e;
+    public boolean isHardcore() {
+        return this.theWorldSettings.obf1_e;
     }
 
-    public final File getDataDirectory() {
+    public File getDataDirectory() {
         return Main.mcDataDir;
     }
 
-    public final boolean isDedicatedServer() {
+    public boolean isDedicatedServer() {
         return true;
     }
 
-    public final void finalTick(CrashReport var1) {
+    public void finalTick(CrashReport var1) {
         while (isServerRunning()) {
+            executePendingCommands();
             try {
                 Thread.sleep(10L);
             } catch (InterruptedException var3) {
@@ -135,19 +136,19 @@ public class BEServer extends MinecraftServer {
         }
     }
 
-    public final CrashReport addServerInfoToCrashReport(CrashReport var1) {
+    public CrashReport addServerInfoToCrashReport(CrashReport var1) {
         return super.addServerInfoToCrashReport(var1);
     }
 
-    public final void addServerStatsToSnooper(PlayerUsageSnooper var1) {
+    public void addServerStatsToSnooper(PlayerUsageSnooper var1) {
         super.addServerStatsToSnooper(var1);
     }
 
-    public final boolean isSnooperEnabled() {
-        return true;
+    public boolean isSnooperEnabled() {
+        return false;
     }
 
-    public final int a(EnumGameType var1, boolean var2, int var3) {
+    public int obf1_a(EnumGameType var1, boolean var2, int var3) {
         return 0;
     }
 
@@ -155,47 +156,57 @@ public class BEServer extends MinecraftServer {
         return this.motd;
     }
 
-    public final Ov getLogAgent() {
-        return this.F;
+    public Ov getLogAgent() {
+        return this.obf1_F;
     }
 
-    public final Ov R() {
-        return this.M;
+    public Ov obf1_R() {
+        return this.obf1_M;
     }
 
-    public final void stopServer() {
+    public void stopServer() {
         super.stopServer();
-        if (this.lanServerPing != null) {
-            this.lanServerPing.interrupt();
-            this.lanServerPing = null;
+        this.obf1_h = true;
+        getLogAgent().obf1_a("Stopped!");
+    }
+
+    public void updateTimeLightAndEntities() {
+        super.updateTimeLightAndEntities();
+        executePendingCommands();
+    }
+
+    public void addPendingCommand(String par1Str, ICommandSender par2ICommandSender, boolean permission_override) {
+        this.pendingCommandList.add(new ServerCommand(par1Str, par2ICommandSender, permission_override));
+    }
+
+    public void executePendingCommands() {
+        while (!this.pendingCommandList.isEmpty()) {
+            ServerCommand var1 = this.pendingCommandList.remove(0);
+            this.commandManager.obf1_a(var1.sender, var1.command, var1.permission_override);
         }
     }
 
-    public final void initiateShutdown() {
-        super.initiateShutdown();
-        if (this.lanServerPing != null) {
-            this.lanServerPing.interrupt();
-            this.lanServerPing = null;
-        }
+    public boolean isServerStopped() {
+        return this.obf1_h;
     }
 
-    public final boolean isCommandBlockEnabled() {
+    public boolean isCommandBlockEnabled() {
         return true;
     }
 
-    public final boolean h() {
-        return this.theWorldSettings.i;
+    public boolean obf1_h() {
+        return this.theWorldSettings.obf1_i;
     }
 
-    public final boolean i() {
-        return this.theWorldSettings.j;
+    public boolean obf1_i() {
+        return this.theWorldSettings.obf1_j;
     }
 
-    public final NetworkListenThread getNetworkThread() {
+    public NetworkListenThread getNetworkThread() {
         return this.theServerListeningThread;
     }
 
-    public final boolean V() {
+    public boolean obf1_V() {
         return false;
     }
 }

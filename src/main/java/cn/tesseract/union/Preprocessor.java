@@ -4,10 +4,7 @@ import cn.tesseract.asm.Transformer;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.FieldNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
+import org.objectweb.asm.tree.*;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -26,42 +23,84 @@ public class Preprocessor {
     public static String side = "unknown";
     public static HashMap<String, List<Consumer<ClassNode>>> transformers = new HashMap<>();
 
-    public static void transform(String className, ClassNode node) {
-        node.access = ~(~node.access | Modifier.FINAL | Modifier.PRIVATE | Modifier.PROTECTED) | Modifier.PUBLIC;
-        for (MethodNode method : node.methods)
-            method.access = ~(~method.access | Modifier.FINAL | Modifier.PRIVATE | Modifier.PROTECTED) | Modifier.PUBLIC;
-
-        if (className.equals("net.minecraft.client.main.Main") || className.equals("net.minecraft.Minecraft") || className.equals("net.minecraft.ServerConfigurationManager"))
-            for (FieldNode field : node.fields)
-                field.access = ~(~field.access | Modifier.FINAL | Modifier.PRIVATE | Modifier.PROTECTED) | Modifier.PUBLIC;
-        else for (FieldNode field : node.fields)
-            field.access = ~(~field.access | Modifier.PRIVATE | Modifier.PROTECTED) | Modifier.PUBLIC;
-    }
-
     static {
-        registerNodeTransformer("net.minecraft.Minecraft", classNode -> {
+        registerNodeTransformer("net.minecraft.bes.Minecraft", classNode -> {
             MethodNode constructor = new MethodNode(Modifier.PUBLIC, "<init>", "()V", null, null);
             constructor.visitCode();
             constructor.visitVarInsn(Opcodes.ALOAD, 0);
-            constructor.visitMethodInsn(183, "java/lang/Object", "<init>", "()V", false);
+            constructor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
             constructor.visitInsn(Opcodes.RETURN);
             constructor.visitEnd();
             classNode.methods.add(constructor);
         });
 
-        registerNodeTransformer("net.minecraft.World", classNode -> {
-            classNode.methods.forEach(method -> {
-                Arrays.stream(method.instructions.toArray()).forEach(insn -> {
-                    if (insn.getOpcode() == Opcodes.INVOKESTATIC) {
-                        MethodInsnNode methodInsn = (MethodInsnNode) insn;
-                        if (methodInsn.owner.equals("net/minecraft/Minecraft") && methodInsn.name.equals("getMinecraft")) {
-                            methodInsn.owner = "cn/tesseract/bes/hook/FixHook";
-                            methodInsn.name = "nullMinecraft";
-                        }
+        registerNodeTransformer("net.minecraft.bes.World", classNode -> classNode.methods.forEach(method -> Arrays.stream(method.instructions.toArray()).forEach(insn -> {
+            if (insn.getOpcode() == Opcodes.INVOKESTATIC) {
+                MethodInsnNode methodInsn = (MethodInsnNode) insn;
+                if (methodInsn.owner.equals("net/minecraft/bes/Minecraft") && methodInsn.name.equals("getMinecraft")) {
+                    method.instructions.set(insn, new InsnNode(Opcodes.ACONST_NULL));
+                }
+            }
+        })));
+
+        registerNodeTransformer("net.minecraft.bes.ServerConfigurationManager", classNode -> classNode.methods.forEach(method -> {
+            if (method.name.equals("obf1_b")) Arrays.stream(method.instructions.toArray()).forEach(insn -> {
+                if (insn instanceof MethodInsnNode methodInsn) {
+                    if (methodInsn.owner.equals("java/io/PrintStream") && methodInsn.name.equals("println") && methodInsn.desc.equals("(Ljava/lang/String;)V")) {
+                        method.instructions.set(insn, new InsnNode(Opcodes.POP2));
                     }
-                });
+                }
             });
+        }));
+
+        registerNodeTransformer("net.minecraft.bes.VillageCollection", classNode -> {
+            MethodNode constructor = new MethodNode(Opcodes.ACC_PUBLIC, "<init>", "(Ljava/lang/String;)V", null, null);
+            InsnList insn = constructor.instructions;
+
+            insn.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            insn.add(new VarInsnNode(Opcodes.ALOAD, 1));
+            insn.add(new MethodInsnNode(
+                    Opcodes.INVOKESPECIAL,
+                    "net/minecraft/bes/WorldSavedData",
+                    "<init>",
+                    "(Ljava/lang/String;)V",
+                    false
+            ));
+
+            insn.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            insn.add(new TypeInsnNode(Opcodes.NEW, "java/util/ArrayList"));
+            insn.add(new InsnNode(Opcodes.DUP));
+            insn.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/util/ArrayList", "<init>", "()V", false));
+            insn.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/bes/VillageCollection", "obf1_a", "Ljava/util/List;"));
+
+            insn.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            insn.add(new TypeInsnNode(Opcodes.NEW, "java/util/ArrayList"));
+            insn.add(new InsnNode(Opcodes.DUP));
+            insn.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/util/ArrayList", "<init>", "()V", false));
+            insn.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/bes/VillageCollection", "obf1_d", "Ljava/util/List;"));
+
+            insn.add(new VarInsnNode(Opcodes.ALOAD, 0));
+            insn.add(new TypeInsnNode(Opcodes.NEW, "java/util/ArrayList"));
+            insn.add(new InsnNode(Opcodes.DUP));
+            insn.add(new MethodInsnNode(Opcodes.INVOKESPECIAL, "java/util/ArrayList", "<init>", "()V", false));
+            insn.add(new FieldInsnNode(Opcodes.PUTFIELD, "net/minecraft/bes/VillageCollection", "obf1_b", "Ljava/util/List;"));
+
+            insn.add(new InsnNode(Opcodes.RETURN));
+
+            classNode.methods.add(constructor);
         });
+    }
+
+    public static void transform(String className, ClassNode node) {
+        node.access = ~(~node.access | Modifier.FINAL | Modifier.PRIVATE | Modifier.PROTECTED) | Modifier.PUBLIC;
+        for (MethodNode method : node.methods)
+            method.access = ~(~method.access | Modifier.FINAL | Modifier.PRIVATE | Modifier.PROTECTED) | Modifier.PUBLIC;
+
+        if (className.equals("net.minecraft.bes.client.main.Main") || className.equals("net.minecraft.bes.Minecraft") || className.equals("net.minecraft.bes.ServerConfigurationManager"))
+            for (FieldNode field : node.fields)
+                field.access = ~(~field.access | Modifier.FINAL | Modifier.PRIVATE | Modifier.PROTECTED) | Modifier.PUBLIC;
+        else for (FieldNode field : node.fields)
+            field.access = ~(~field.access | Modifier.PRIVATE | Modifier.PROTECTED) | Modifier.PUBLIC;
     }
 
     public static void main(String[] args) throws IOException {

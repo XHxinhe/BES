@@ -2,7 +2,7 @@ package cn.tesseract.bes;
 
 import cn.tesseract.bes.server.BEServer;
 import cn.tesseract.bes.server.ServerConfig;
-import net.minecraft.*;
+import net.minecraft.bes.*;
 
 import java.io.File;
 import java.io.InputStream;
@@ -11,24 +11,33 @@ import java.util.List;
 import java.util.Set;
 
 public class Main {
-    public static final ServerConfig config = ConfigIO.loadOrCreate();
     public static final Minecraft dummyMc = new Minecraft();
     public static final File mcDataDir = new File(System.getProperty("user.dir"));
+    public static ServerConfig config = Config.loadOrCreate();
+    public static BEServer server;
+    public static boolean started;
 
     static {
-        dummyMc.O = mcDataDir;
-        dummyMc.W = true;
-        dummyMc.Y = new DummyResourceManager();
+        dummyMc.obf1_O = mcDataDir;
+        dummyMc.obf1_W = true;
+        dummyMc.obf1_Y = new DummyResourceManager();
+        dummyMc.obf1_ab = new LanguageManager(dummyMc.aQ, "zh_CN");
         StatList.nopInit();
     }
 
-    public static BEServer server;
-
     public static void main(String[] var0) {
+        startServer();
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (server != null) {
+                server.stopServer();
+            }
+        }));
+    }
+
+    public static void startServer() {
         server = new BEServer(config.seed, config.ip, config.port);
-        server.E.start();
+        server.obf1_E.start();
         server.setMOTD(config.motd);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> server.stopServer()));
     }
 
     public static class DummyResourceManager implements ReloadableResourceManager {

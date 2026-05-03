@@ -1,14 +1,9 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by Fernflower decompiler)
-//
-
 package cn.tesseract.bes.server;
 
-import net.minecraft.NBTTagCompound;
-import net.minecraft.ServerConfigurationManager;
-import net.minecraft.ServerPlayer;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.bes.NBTTagCompound;
+import net.minecraft.bes.ServerConfigurationManager;
+import net.minecraft.bes.ServerPlayer;
+import net.minecraft.bes.server.MinecraftServer;
 
 import java.net.SocketAddress;
 
@@ -26,7 +21,6 @@ public class BESPlayerList extends ServerConfigurationManager {
             this.hostPlayerData = new NBTTagCompound();
             var1.writeToNBT(this.hostPlayerData);
         }
-
         super.writePlayerData(var1);
     }
 

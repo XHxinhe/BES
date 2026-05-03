@@ -10,11 +10,9 @@ repositories {
 def runDir = "${projectDir}/run"
 
 dependencies {
-    implementation files("${project(':core').buildDir}/libs/game-lib_preprocessed.jar")
     implementation fileTree(dir: "libs", include: ['*.jar'])
     implementation project(":core")
-    compileOnly project(":")
-    compileOnly fileTree(dir: "$runDir/libs", include: ['*.jar'])
+    compileOnly project(':')
 }
 
 shadowJar {

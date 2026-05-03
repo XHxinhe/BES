@@ -14,7 +14,7 @@ ext {
 }
 
 dependencies {
-    compileOnly files("${moddingDir}/game-lib_preprocessed.jar")
+    api files("${moddingDir}/game-lib_preprocessed.jar")
     compileOnly project(':')
 }
 
@@ -36,7 +36,7 @@ task remap(type: JavaExec) {
     outputs.file output
     main = 'net.fabricmc.tinyremapper.Main'
     classpath = project(":").sourceSets.main.runtimeClasspath
-    args input, output, mappings.absolutePath, 'intermediary', 'named'
+    args input, output, mappings.absolutePath, 'official', 'named'
 
 }
 

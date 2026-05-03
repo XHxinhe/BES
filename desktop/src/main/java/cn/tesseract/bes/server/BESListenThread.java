@@ -1,8 +1,8 @@
 package cn.tesseract.bes.server;
 
-import net.minecraft.NetworkListenThread;
-import net.minecraft.ServerListenThread;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.bes.NetworkListenThread;
+import net.minecraft.bes.ServerListenThread;
+import net.minecraft.bes.server.MinecraftServer;
 
 import java.net.InetAddress;
 
@@ -16,20 +16,17 @@ public class BESListenThread extends NetworkListenThread {
         this.theServerListenThread.start();
     }
 
-    @Override
     public void stopListening() {
         super.stopListening();
         this.theServerListenThread.func_71768_b();
         this.theServerListenThread.interrupt();
     }
 
-    @Override
     public void networkTick() {
         this.theServerListenThread.a();
         super.networkTick();
     }
 
-    @Override
     public MinecraftServer getServer() {
         return super.getServer();
     }
