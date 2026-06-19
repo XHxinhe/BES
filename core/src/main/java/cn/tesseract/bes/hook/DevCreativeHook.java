@@ -11,6 +11,7 @@ import net.minecraft.bes.EntityPlayer;
 import net.minecraft.bes.EnumGameType;
 import net.minecraft.bes.ICommandSender;
 import net.minecraft.bes.Minecraft;
+import net.minecraft.bes.Packet70GameEvent;
 import net.minecraft.bes.ServerPlayer;
 import net.minecraft.bes.World;
 import net.minecraft.bes.WorldServer;
@@ -58,6 +59,7 @@ public class DevCreativeHook {
         manager.c = gameType;
         gameType.configurePlayerCapabilities(manager.b.capabilities);
         manager.b.sendPlayerAbilities();
+        syncClientGameMode(manager.b, gameType);
     }
 
     @Hook(returnCondition = ReturnCondition.ALWAYS)
@@ -182,5 +184,13 @@ public class DevCreativeHook {
         }
         return server.getConfigurationManager() != null
                 && server.getConfigurationManager().obf1_e.contains(username.toLowerCase());
+    }
+
+    private static void syncClientGameMode(ServerPlayer player, EnumGameType gameType) {
+        if (player == null || player.playerNetServerHandler == null || gameType == null) {
+            return;
+        }
+        player.playerNetServerHandler.sendPacketToPlayer(new Packet70GameEvent(3, gameType.id));
+        player.updateHeldItem();
     }
 }
