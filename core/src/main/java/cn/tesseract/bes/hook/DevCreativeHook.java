@@ -5,6 +5,7 @@ import cn.tesseract.asm.ReturnCondition;
 import net.minecraft.LM;
 import net.minecraft.bes.CommandException;
 import net.minecraft.bes.CommandHandler;
+import net.minecraft.bes.CommandServerDeop;
 import net.minecraft.bes.CommandTime;
 import net.minecraft.bes.CommandServerOp;
 import net.minecraft.bes.EntityPlayer;
@@ -13,6 +14,7 @@ import net.minecraft.bes.ICommandSender;
 import net.minecraft.bes.Minecraft;
 import net.minecraft.bes.Packet70GameEvent;
 import net.minecraft.bes.RA;
+import net.minecraft.bes.ServerConfigurationManager;
 import net.minecraft.bes.ServerPlayer;
 import net.minecraft.bes.WorldType;
 import net.minecraft.bes.World;
@@ -20,7 +22,23 @@ import net.minecraft.bes.WorldServer;
 import net.minecraft.bes.WrongUsageException;
 import net.minecraft.bes.server.MinecraftServer;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+
 public class DevCreativeHook {
+    private static final File OPS_FILE = new File("ops.txt");
+    private static boolean opsLoaded;
+
     @Hook(returnCondition = ReturnCondition.ALWAYS)
     public static boolean obf1_b(Minecraft minecraft) {
         return true;
@@ -113,8 +131,31 @@ public class DevCreativeHook {
         if (server == null || server.getConfigurationManager() == null) {
             throw new CommandException("commands.generic.exception");
         }
-        server.getConfigurationManager().obf1_e.add(args[0].toLowerCase());
+        ServerConfigurationManager manager = server.getConfigurationManager();
+        loadPersistentOps(manager);
+        manager.obf1_e.add(normalizeUsername(args[0]));
+        savePersistentOps(manager, args[0], false);
         command.notifyAdmins(sender, "commands.op.success", args[0]);
+    }
+
+    @Hook(returnCondition = ReturnCondition.ALWAYS)
+    public static void processCommand(CommandServerDeop command, ICommandSender sender, String[] args) {
+        if (args.length != 1 || args[0].length() <= 0) {
+            throw new WrongUsageException("commands.deop.usage");
+        }
+        if (!sender.canCommandSenderUseCommand(3, "deop")) {
+            throw new CommandException("commands.generic.permission");
+        }
+        MinecraftServer server = MinecraftServer.getServer();
+        if (server == null || server.getConfigurationManager() == null) {
+            throw new CommandException("commands.generic.exception");
+        }
+        ServerConfigurationManager manager = server.getConfigurationManager();
+        loadPersistentOps(manager);
+        manager.removeOp(args[0]);
+        manager.obf1_e.remove(normalizeUsername(args[0]));
+        savePersistentOps(manager, args[0], true);
+        command.notifyAdmins(sender, "commands.deop.success", args[0]);
     }
 
     @Hook(returnCondition = ReturnCondition.ALWAYS)
@@ -184,8 +225,112 @@ public class DevCreativeHook {
         if (server.serverOwner != null && server.serverOwner.equalsIgnoreCase(username)) {
             return true;
         }
-        return server.getConfigurationManager() != null
-                && server.getConfigurationManager().obf1_e.contains(username.toLowerCase());
+        ServerConfigurationManager manager = server.getConfigurationManager();
+        loadPersistentOps(manager);
+        return manager != null && manager.obf1_e.contains(normalizeUsername(username));
+    }
+
+    private static void loadPersistentOps(ServerConfigurationManager manager) {
+        if (opsLoaded || manager == null) {
+            return;
+        }
+        opsLoaded = true;
+        if (!OPS_FILE.isFile()) {
+            return;
+        }
+
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(OPS_FILE), "UTF-8"));
+            try {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String username = line.trim();
+                    if (username.length() == 0 || username.startsWith("#")) {
+                        continue;
+                    }
+                    manager.obf1_e.add(normalizeUsername(username));
+                }
+            } finally {
+                reader.close();
+            }
+        } catch (IOException e) {
+            System.err.println("[BES-DevCreative] Failed to load ops.txt: " + e.getMessage());
+        }
+    }
+
+    private static void savePersistentOps(ServerConfigurationManager manager, String changedUsername, boolean remove) {
+        if (manager == null) {
+            return;
+        }
+
+        List<String> ops = new ArrayList<String>();
+        String changedKey = normalizeUsername(changedUsername);
+        if (OPS_FILE.isFile()) {
+            try {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(OPS_FILE), "UTF-8"));
+                try {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        String username = line.trim();
+                        if (username.length() == 0 || username.startsWith("#")) {
+                            continue;
+                        }
+                        if (!normalizeUsername(username).equals(changedKey)) {
+                            addUniqueOp(ops, username);
+                        }
+                    }
+                } finally {
+                    reader.close();
+                }
+            } catch (IOException e) {
+                System.err.println("[BES-DevCreative] Failed to read existing ops.txt: " + e.getMessage());
+            }
+        }
+
+        for (Object value : manager.obf1_e) {
+            if (value == null) {
+                continue;
+            }
+            String username = value.toString().trim();
+            if (normalizeUsername(username).equals(changedKey)) {
+                continue;
+            }
+            addUniqueOp(ops, username);
+        }
+        if (!remove) {
+            addUniqueOp(ops, changedUsername == null ? "" : changedUsername.trim());
+        }
+        Collections.sort(ops, String.CASE_INSENSITIVE_ORDER);
+
+        try {
+            PrintWriter writer = new PrintWriter(new OutputStreamWriter(new FileOutputStream(OPS_FILE), "UTF-8"));
+            try {
+                for (String op : ops) {
+                    writer.println(op);
+                }
+            } finally {
+                writer.close();
+            }
+        } catch (IOException e) {
+            System.err.println("[BES-DevCreative] Failed to save ops.txt: " + e.getMessage());
+        }
+    }
+
+    private static void addUniqueOp(List<String> ops, String username) {
+        String key = normalizeUsername(username);
+        if (key.length() == 0) {
+            return;
+        }
+        for (String op : ops) {
+            if (normalizeUsername(op).equals(key)) {
+                return;
+            }
+        }
+        ops.add(username);
+    }
+
+    private static String normalizeUsername(String username) {
+        return username == null ? "" : username.trim().toLowerCase(Locale.ROOT);
     }
 
     private static void syncClientGameMode(ServerPlayer player, EnumGameType gameType) {
