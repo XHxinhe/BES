@@ -45,7 +45,8 @@ public class Preprocessor {
 
         registerNodeTransformer("net.minecraft.bes.ServerConfigurationManager", classNode -> classNode.methods.forEach(method -> {
             if (method.name.equals("obf1_b")) Arrays.stream(method.instructions.toArray()).forEach(insn -> {
-                if (insn instanceof MethodInsnNode methodInsn) {
+                if (insn instanceof MethodInsnNode) {
+                    MethodInsnNode methodInsn = (MethodInsnNode) insn;
                     if (methodInsn.owner.equals("java/io/PrintStream") && methodInsn.name.equals("println") && methodInsn.desc.equals("(Ljava/lang/String;)V")) {
                         method.instructions.set(insn, new InsnNode(Opcodes.POP2));
                     }

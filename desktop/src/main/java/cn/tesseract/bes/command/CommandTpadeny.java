@@ -2,6 +2,7 @@ package cn.tesseract.bes.command;
 
 import net.minecraft.bes.*;
 
+import java.util.Collections;
 import java.util.List;
 
 public class CommandTpadeny extends CommandBase {
@@ -11,7 +12,7 @@ public class CommandTpadeny extends CommandBase {
     }
 
     public List<String> getCommandAliases() {
-        return List.of("tpano");
+        return Collections.singletonList("tpano");
     }
 
     @Override
