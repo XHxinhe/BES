@@ -12,11 +12,8 @@ import net.minecraft.bes.EntityPlayer;
 import net.minecraft.bes.EnumGameType;
 import net.minecraft.bes.ICommandSender;
 import net.minecraft.bes.Minecraft;
-import net.minecraft.bes.Packet70GameEvent;
-import net.minecraft.bes.RA;
 import net.minecraft.bes.ServerConfigurationManager;
 import net.minecraft.bes.ServerPlayer;
-import net.minecraft.bes.WorldType;
 import net.minecraft.bes.World;
 import net.minecraft.bes.WorldServer;
 import net.minecraft.bes.WrongUsageException;
@@ -79,7 +76,6 @@ public class DevCreativeHook {
         manager.c = gameType;
         gameType.configurePlayerCapabilities(manager.b.capabilities);
         manager.b.sendPlayerAbilities();
-        syncClientGameMode(manager.b, gameType);
     }
 
     @Hook(returnCondition = ReturnCondition.ALWAYS)
@@ -333,29 +329,4 @@ public class DevCreativeHook {
         return username == null ? "" : username.trim().toLowerCase(Locale.ROOT);
     }
 
-    private static void syncClientGameMode(ServerPlayer player, EnumGameType gameType) {
-        if (player == null || player.playerNetServerHandler == null || player.worldObj == null || gameType == null) {
-            return;
-        }
-        player.playerNetServerHandler.sendPacketToPlayer(new Packet70GameEvent(3, gameType.id));
-        WorldType worldType = player.worldObj.worldInfo.obf1_b.obf1_c;
-        player.playerNetServerHandler.sendPacketToPlayer(new RA(
-                player.dimension,
-                player.worldObj.obf1_E(),
-                worldType,
-                player.worldObj.getActualHeight(),
-                gameType,
-                player.worldObj.worldInfo.obf1_b.obf1_D,
-                player.worldObj.obf1_t()
-        ));
-        player.playerNetServerHandler.setPlayerLocation(
-                player.posX,
-                player.posY,
-                player.posZ,
-                player.rotationYaw,
-                player.rotationPitch
-        );
-        player.sendPlayerAbilities();
-        player.updateHeldItem();
-    }
 }
