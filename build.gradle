@@ -1,0 +1,32 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url = "https://maven.fabricmc.net/"
+    }
+}
+
+dependencies {
+    implementation("net.fabricmc:tiny-remapper:0.12.1")
+    implementation 'org.ow2.asm:asm:9.7.1'
+    implementation 'org.ow2.asm:asm-commons:9.7.1'
+    implementation 'org.ow2.asm:asm-tree:9.7.1'
+}
+
+task remapMod(type: JavaExec) {
+    def input = "mod.jar"
+    def output = "mod_remapped.jar"
+    def mappings = file("core/libs/mappings.tiny")
+    doFirst {
+        file(output).delete()
+    }
+    inputs.file input
+    inputs.file mappings
+    outputs.file output
+    main = 'net.fabricmc.tinyremapper.Main'
+    classpath = rootProject.sourceSets.main.runtimeClasspath
+    args input, output, mappings.absolutePath, 'official', 'named'
+}
