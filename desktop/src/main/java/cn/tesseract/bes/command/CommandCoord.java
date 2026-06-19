@@ -2,6 +2,7 @@ package cn.tesseract.bes.command;
 
 import net.minecraft.bes.*;
 
+import java.util.Collections;
 import java.util.List;
 
 public class CommandCoord extends CommandBase {
@@ -12,7 +13,7 @@ public class CommandCoord extends CommandBase {
 
     @Override
     public List<String> getCommandAliases() {
-        return List.of("coord");
+        return Collections.singletonList("coord");
     }
 
     @Override
@@ -28,7 +29,7 @@ public class CommandCoord extends CommandBase {
     @Override
     public void processCommand(ICommandSender sender, String[] strArr) {
         if (sender instanceof ServerPlayer) {
-            var pos = sender.getPlayerCoordinates();
+            ChunkCoordinates pos = sender.getPlayerCoordinates();
             sender.sendChatToPlayer(ChatMessageComponent.createFromText(String.format("当前坐标 X: %s Y: %s Z: %s", pos.posX, pos.posY, pos.posZ)));
             return;
         }
