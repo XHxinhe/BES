@@ -36,6 +36,9 @@ public class CommandHome extends CommandBase {
 
     @Override
     public void processCommand(ICommandSender iCommandSender, String[] strArr) {
+        if (!TeleportCommandAccess.checkEnabled(iCommandSender)) {
+            return;
+        }
         double[] home;
         String str;
         ServerPlayer commandSenderAsPlayer = CommandBase.getCommandSenderAsPlayer(iCommandSender);

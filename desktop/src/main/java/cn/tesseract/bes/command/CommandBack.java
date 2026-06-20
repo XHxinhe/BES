@@ -22,6 +22,9 @@ public class CommandBack extends CommandBase {
 
     @Override
     public void processCommand(ICommandSender iCommandSender, String[] strArr) {
+        if (!TeleportCommandAccess.checkEnabled(iCommandSender)) {
+            return;
+        }
         ServerPlayer commandSenderAsPlayer = CommandBase.getCommandSenderAsPlayer(iCommandSender);
         double[] lastPosition = HomeData.getLastPosition(commandSenderAsPlayer.username);
         if (lastPosition == null) {

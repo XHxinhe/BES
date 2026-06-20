@@ -27,6 +27,9 @@ public class CommandTpadeny extends CommandBase {
 
     @Override
     public void processCommand(ICommandSender iCommandSender, String[] strArr) {
+        if (!TeleportCommandAccess.checkEnabled(iCommandSender)) {
+            return;
+        }
         ServerPlayer commandSenderAsPlayer = CommandBase.getCommandSenderAsPlayer(iCommandSender);
         String tpaRequest = HomeData.getTpaRequest(commandSenderAsPlayer.username);
         if (tpaRequest == null) {

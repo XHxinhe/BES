@@ -22,6 +22,9 @@ public class CommandSethome extends CommandBase {
 
     @Override
     public void processCommand(ICommandSender iCommandSender, String[] strArr) {
+        if (!TeleportCommandAccess.checkEnabled(iCommandSender)) {
+            return;
+        }
         ServerPlayer commandSenderAsPlayer = CommandBase.getCommandSenderAsPlayer(iCommandSender);
         String str = (strArr.length < 1 || strArr[0].isEmpty()) ? HomeData.DEFAULT_HOME : strArr[0];
         boolean zHasHome = HomeData.hasHome(commandSenderAsPlayer.username, str);

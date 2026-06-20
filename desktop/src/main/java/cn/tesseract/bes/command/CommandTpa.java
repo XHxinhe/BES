@@ -23,6 +23,9 @@ public class CommandTpa extends CommandBase {
 
     @Override
     public void processCommand(ICommandSender iCommandSender, String[] strArr) {
+        if (!TeleportCommandAccess.checkEnabled(iCommandSender)) {
+            return;
+        }
         if (strArr.length < 1) {
             iCommandSender.sendChatToPlayer(new ChatMessageComponent().addText("§c用法: /tpa <玩家名>"));
             return;

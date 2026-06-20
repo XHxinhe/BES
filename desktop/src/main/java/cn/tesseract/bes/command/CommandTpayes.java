@@ -23,8 +23,11 @@ public class CommandTpayes extends CommandBase {
         return true;
     }
 
-    @Override
+    @Override 
     public void processCommand(ICommandSender iCommandSender, String[] strArr) {
+        if (!TeleportCommandAccess.checkEnabled(iCommandSender)) {
+            return;
+        }
         if (HomeData.toggleAutoAcceptTpa(CommandBase.getCommandSenderAsPlayer(iCommandSender).username)) {
             iCommandSender.sendChatToPlayer(new ChatMessageComponent().addText("§a[TPA] 自动接受已开启 §7他人 /tpa 你时直接传送，再输 /tpayes 关闭"));
         } else {

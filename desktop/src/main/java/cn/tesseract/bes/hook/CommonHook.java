@@ -35,6 +35,7 @@ public class CommonHook {
         c.registerCommand(new CommandTpaccept());
         c.registerCommand(new CommandTpadeny());
         c.registerCommand(new CommandTpayes());
+        c.registerCommand(new CommandTeleportCommands());
     }
 
     @Hook(injector = "exit")

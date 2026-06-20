@@ -33,6 +33,7 @@ public class BEServer extends MinecraftServer {
         setBuildLimit(256);
         setConfigurationManager(new BESPlayerList(this));
         this.theWorldSettings = new agD(seed, EnumGameType.SURVIVAL, true, false, WorldType.parseWorldType("largeBiomes"), false);
+        this.theWorldSettings.obf1_c = getConfiguredDifficulty();
         try {
             this.theServerListeningThread = new BESListenThread(this, InetAddress.getByName(ip), port);
         } catch (UnknownHostException e) {
@@ -110,7 +111,7 @@ public class BEServer extends MinecraftServer {
     }
 
     public afZ obf1_f() {
-        return afZ.obf1_b;
+        return getConfiguredDifficulty();
     }
 
     public boolean isHardcore() {
@@ -208,5 +209,9 @@ public class BEServer extends MinecraftServer {
 
     public boolean obf1_V() {
         return false;
+    }
+
+    private static afZ getConfiguredDifficulty() {
+        return "hard".equals(Main.config.difficulty) ? afZ.obf1_b : afZ.obf1_a;
     }
 }
