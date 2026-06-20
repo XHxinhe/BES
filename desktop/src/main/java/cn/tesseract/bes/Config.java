@@ -41,6 +41,7 @@ public final class Config {
                 config = new ServerConfig();
             }
             config.normalize();
+            write(config, path);
             return config;
         }
     }
@@ -53,4 +54,3 @@ public final class Config {
         }
     }
 }
-

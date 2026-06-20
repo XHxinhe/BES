@@ -1,6 +1,7 @@
 package cn.tesseract.bes.server;
 
 import cn.tesseract.bes.Main;
+import cn.tesseract.bes.command.HomeData;
 import net.minecraft.bes.*;
 import net.minecraft.bes.server.MinecraftServer;
 
@@ -32,7 +33,7 @@ public class BEServer extends MinecraftServer {
         canCreateBonusChest(false);
         setBuildLimit(256);
         setConfigurationManager(new BESPlayerList(this));
-        this.theWorldSettings = new agD(seed, EnumGameType.SURVIVAL, true, false, WorldType.parseWorldType("largeBiomes"), false);
+        this.theWorldSettings = new agD(seed, EnumGameType.SURVIVAL, true, isHardcoreModeConfigured(), WorldType.parseWorldType("largeBiomes"), false);
         this.theWorldSettings.obf1_c = getConfiguredDifficulty();
         try {
             this.theServerListeningThread = new BESListenThread(this, InetAddress.getByName(ip), port);
@@ -58,6 +59,7 @@ public class BEServer extends MinecraftServer {
                 this.worldServers[var8] = new agC(this, var7, var2, var4, this.theWorldSettings, this.worldServers[0], this.theProfiler, this.obf1_F);
             }
             this.worldServers[var8].addWorldAccess(new ags(this, this.worldServers[var8]));
+            applyConfiguredWorldMode(this.worldServers[var8]);
             xi.obf1_a(this.worldServers[var8]);
             getConfigurationManager().setPlayerManager(this.worldServers);
         }
@@ -69,7 +71,7 @@ public class BEServer extends MinecraftServer {
         var1.setDaemon(true);
         var1.start();
         this.obf1_F.obf1_a("Starting Break Everything Server", new Object[0]);
-        obf1_d(false);
+        obf1_d(Main.config.onlineMode);
         obf1_e(true);
         obf1_f(true);
         obf1_g(true);
@@ -85,9 +87,15 @@ public class BEServer extends MinecraftServer {
 
     public void tick() {
         super.tick();
+        if (this.tickCounter % 20 == 0) {
+            updateServerListMotd();
+        }
+        if (this.tickCounter % 200 == 0) {
+            HomeData.flushLastPositions();
+        }
         if (this.tickCounter % 1000 == 0) {
             getConfigurationManager().loadWhiteList();
-            if (getConfigurationManager().getCurrentPlayerCount() == 0) {
+            if (Main.config.forceGcWhenEmpty && getConfigurationManager().getCurrentPlayerCount() == 0) {
                 System.gc();
             }
         }
@@ -115,7 +123,19 @@ public class BEServer extends MinecraftServer {
     }
 
     public boolean isHardcore() {
-        return this.theWorldSettings.obf1_e;
+        return isHardcoreModeConfigured();
+    }
+
+    public void setWorldMode(String mode) {
+        Main.config.worldMode = mode;
+        Main.config.normalize();
+        if (this.worldServers != null) {
+            for (WorldServer world : this.worldServers) {
+                if (world != null) {
+                    applyConfiguredWorldMode(world);
+                }
+            }
+        }
     }
 
     public File getDataDirectory() {
@@ -154,7 +174,7 @@ public class BEServer extends MinecraftServer {
     }
 
     public String getMOTD() {
-        return this.motd;
+        return getServerListMotd();
     }
 
     public Ov getLogAgent() {
@@ -166,6 +186,7 @@ public class BEServer extends MinecraftServer {
     }
 
     public void stopServer() {
+        HomeData.flushLastPositions();
         super.stopServer();
         this.obf1_h = true;
         getLogAgent().obf1_a("Stopped!");
@@ -211,7 +232,45 @@ public class BEServer extends MinecraftServer {
         return false;
     }
 
+    private void updateServerListMotd() {
+        setMOTD(getServerListMotd());
+    }
+
+    private String getServerListMotd() {
+        if (!Main.config.showServerListTime) {
+            return Main.config.motd;
+        }
+        return Main.config.motd + " " + getInGameTimeMotdSuffix();
+    }
+
+    private String getInGameTimeMotdSuffix() {
+        if (this.worldServers == null || this.worldServers.length == 0 || this.worldServers[0] == null) {
+            return "";
+        }
+
+        long dayTime = Math.floorMod(this.worldServers[0].obf1_t(), 24000L);
+        long clockTime = (dayTime + 6000L) % 24000L;
+        int totalMinutes = (int) (clockTime * 1440L / 24000L);
+        int hour = totalMinutes / 60;
+        int minute = totalMinutes % 60;
+        return "§8[§e" + twoDigits(hour) + ":" + twoDigits(minute) + "§8]";
+    }
+
+    private static String twoDigits(int value) {
+        return value < 10 ? "0" + value : String.valueOf(value);
+    }
+
     private static afZ getConfiguredDifficulty() {
         return "hard".equals(Main.config.difficulty) ? afZ.obf1_b : afZ.obf1_a;
+    }
+
+    private static boolean isHardcoreModeConfigured() {
+        return "hardcore".equals(Main.config.worldMode);
+    }
+
+    private void applyConfiguredWorldMode(WorldServer world) {
+        boolean hardcore = isHardcoreModeConfigured();
+        world.worldInfo.obf1_b.obf1_q = hardcore;
+        getLogAgent().obf1_a("Using world mode " + (hardcore ? "hardcore" : "survival") + " for dimension " + world.provider.obf1_h, new Object[0]);
     }
 }

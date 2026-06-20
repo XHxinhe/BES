@@ -13,6 +13,7 @@ public final class HomeData {
     private static final String LAST_POSITIONS_FILE = "mite_last_positions.txt";
     private static final String TPA_AUTO_FILE = "mite_tpa_auto.txt";
     private static boolean loaded = false;
+    private static boolean lastPositionsDirty = false;
 
     private HomeData() {
     }
@@ -216,12 +217,20 @@ public final class HomeData {
     public static synchronized void setLastPosition(String str, double d, double d2, double d3, int i) {
         ensureLoaded();
         lastPositions.put(str, new double[]{d, d2, d3, i});
-        saveLastPositions();
+        lastPositionsDirty = true;
     }
 
     public static synchronized double[] getLastPosition(String str) {
         ensureLoaded();
         return lastPositions.get(str);
+    }
+
+    public static synchronized void flushLastPositions() {
+        if (!lastPositionsDirty) {
+            return;
+        }
+        saveLastPositions();
+        lastPositionsDirty = false;
     }
 
     private static void loadTpaAuto() {
